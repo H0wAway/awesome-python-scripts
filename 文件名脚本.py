@@ -1,6 +1,7 @@
 # os库用于文件操作
 import os
 
+
 # 移除文件末尾的".下载"后缀
 def main():
     directory = r"E:\Desktop\WE-PLATFORM_files"
@@ -29,8 +30,17 @@ def resume_name():
         list1.append(name)
     print(list1)
 
+# 获取文件名
+def get_file_name():
+    resume = r"E:\Downloads\Compressed\screen-to-code\unzip"
+    list1 = []
+    for filename in os.listdir(resume):
+        list1.append(filename)
+    print(list1)
+
 
 if __name__ == "__main__":
     # main()
     # resume_name()
+    get_file_name()
     print("----------------------------------1")
