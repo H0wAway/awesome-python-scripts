@@ -7,9 +7,10 @@ env = Env()
 env.read_env()
 
 
-# 创建枚举类，区分不同的OpenAI API
 class OpenAIEnum(Enum):
-    f2gpt = "OPEN_AI_f2gpt"
+    """枚举类，区分不同的OpenAI API"""
+
+    f2gpt = "OPEN_AI_F2GPT"
     chatGPT = "OPEN_AI_chatGPT"
 
 
@@ -17,12 +18,15 @@ def get_openai_client(api_enum: OpenAIEnum) -> OpenAI:
     """获取OpenAI的客户端
     从.env中获取OpenAI的配置信息，创建OpenAI客户端
     Env Example:
-        OPEN_AI_f2gpt={"url":"https://api.openai.com","key":"sk-xxx"}
+        OPEN_AI_F2GPT={"url":"https://api.openai.com","key":"sk-xxx"}
     """
-    j1 = env.json(api_enum.value)
+    properties = env.json(api_enum.value)
+    # 对j1进行类型检查和参数验证
+    if not isinstance(properties, dict) or "url" not in properties or "key" not in properties:
+        raise ValueError("Env properties invalid")
     client = OpenAI(organization=api_enum.name)
-    client.base_url = j1.get("url")
-    client.api_key = j1.get("key")
+    client.base_url = properties.get("url")
+    client.api_key = properties.get("key")
     return client
 
 
@@ -55,4 +59,4 @@ def f2gpt_chat(content_):
     if isinstance(f2_client, OpenAI):
         return none_stream_output(f2_client, content_)
     else:
-        return "f2_client is not OpenAI type"
+        raise ValueError("f2_client is not OpenAI type")
