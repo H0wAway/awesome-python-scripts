@@ -27,7 +27,7 @@ class StrUtil:
         return s.upper()
 
     @staticmethod
-    def add_char_to_lines(str_: str, num: int, char: str = " ", eol: str = "\n"):
+    def add_char_to_lines(str_: str, num: int, char: str = " ", eol: str = "\n") -> str:
         """字符串每行开头添加指定数量的字符
         :param str_: 输入字符串
         :param num: 添加的字符数量
@@ -37,9 +37,35 @@ class StrUtil:
         lines = str_.split(eol)  # 按行分割字符串
         indented_lines = []  # 用于存储添加空格后的行
         for i, line in enumerate(lines):
-            indented_line = char * num + line  # 在每行前面添加指定数量的空格
+            indented_line = char * num + line  # 在每行前面添加指定数量的字符
             indented_lines.append(indented_line)
-        return eol.join(indented_lines)  # 将处理后的行重新组合成字符串
+        # join方法可以将一个序列（例如列表、元组等）中的字符串按照指定分隔符连接成一个新的字符串
+        return eol.join(indented_lines)  # 使用eol连接indented_lines
+
+    @staticmethod
+    def format_multiline_output(rows, column_widths):
+        """按表格形式打印多行多列字符串
+        :param rows: 二维字符串列表
+        :param column_widths: 每列的宽度列表
+        """
+        formatted_rows = []
+        for row in rows:
+            formatted_row = []
+            for i, cell in enumerate(row):
+                formatted_row.append("{:<{width}}".format(cell, width=column_widths[i]))
+            formatted_rows.append(" ".join(formatted_row))
+        return "\n".join(formatted_rows)
+
+    @staticmethod
+    def format_single_line_output(row, column_widths):
+        """按表格形式打印单行字符串
+        :param row: 字符串列表
+        :param column_widths: 每列的宽度列表
+        """
+        formatted_row = []
+        for i, cell in enumerate(row):
+            formatted_row.append("{:<{width}}".format(cell, width=column_widths[i]))
+        return " ".join(formatted_row)
 
 
 class FileUtil:
