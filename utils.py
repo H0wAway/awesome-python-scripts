@@ -1,5 +1,25 @@
 import os
 import shutil
+import time
+
+
+def time_it(func):
+    """计时装饰器
+    e.g.
+    @time_it
+    def func():
+        pass
+    :returns: 执行func函数的时间
+    """
+
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        duration_ = time.time() - start_time
+        print(f"{func.__name__}: {duration_:.6f} seconds")
+        return result
+
+    return wrapper
 
 
 class MathUtil:
@@ -154,17 +174,29 @@ class FileUtil:
     @staticmethod
     def is_file(file_path):
         """检查路径是否为文件"""
+        if not os.path.exists(file_path):
+            return False
         return os.path.isfile(file_path)
 
     @staticmethod
     def is_dir(dir_path):
         """检查路径是否为目录"""
+        if not os.path.exists(dir_path):
+            return False
         return os.path.isdir(dir_path)
+
+    @staticmethod
+    def get_sub_name(file_path_: str) -> list[str]:
+        """
+        获取指定目录下的所有文件和文件夹的名称
+        :param file_path_: 目录的路径
+        """
+        return os.listdir(file_path_)
 
     @staticmethod
     def get_file_name(dictionary_path_: str) -> list[str]:
         """
-        获取指定目录下所有的文件名
+        获取指定目录下所有的文件的文件名
         """
         list_ = []
         for filename in os.listdir(dictionary_path_):
@@ -182,3 +214,152 @@ class FileUtil:
             if FileUtil.is_dir(os.path.join(dictionary_path_, filename)):
                 list_.append(filename)
         return list_
+
+    @staticmethod
+    def delete(file_path_: str) -> bool:
+        """
+        删除文件或目录
+        :param file_path_: 文件路径
+        :return: 删除成功返回True，否则返回False
+        """
+        try:
+            # 判断文件是否存在
+            if not FileUtil.file_exists(file_path_):
+                print("文件不存在")
+                return False
+            if FileUtil.is_file(file_path_):
+                os.remove(file_path_)
+            elif FileUtil.is_dir(file_path_):
+                shutil.rmtree(file_path_)
+            return True
+        except Exception as e:
+            print("发生错误：", e)
+            return False
+
+    @staticmethod
+    def get_current_dir():
+        """获取当前工作目录"""
+        return os.getcwd()
+
+    @staticmethod
+    def get_platform():
+        """
+        获取操作系统名称
+        :return: Windows返回'nt'，Linux返回'posix'
+        """
+        return os.name
+
+    @staticmethod
+    def get_separator():
+        """获取系统分隔符
+        :return: Windows返回'\\'，Linux返回'/', Mac返回':'
+        """
+        return os.sep
+
+    @staticmethod
+    def get_dir_size_recursive(path):
+        """递归获取文件夹大小，单位：Bytes"""
+
+        def _get_dir_size_recursive(dir_path_):
+            """子函数，方便装饰器调用主函数"""
+            try:
+                name_list = os.listdir(dir_path_)
+            except PermissionError:
+                return 0  # 跳过权限不足的目录
+            size = 0
+            for i in name_list:
+                j = f'{dir_path_}/{i}'  # 文件和路径拼接用字符串拼接比.join(path,i)方法更直接更高效
+                if os.path.isdir(j):
+                    try:
+                        size += _get_dir_size_recursive(j)  # 如果是文件，累加文件大小
+                    except PermissionError:
+                        pass  # 跳过权限不足的文件
+                else:
+                    size += os.path.getsize(j)
+            return size
+
+        return _get_dir_size_recursive(path)
+
+    @staticmethod
+    def get_dir_size_iterative(path):
+        """迭代获取文件夹大小，单位：Bytes"""
+        size = 0
+        name_dir = [path]
+        # name_dir是一个栈，存放目录名
+        while name_dir:
+            # 从栈中取出一个目录并获取目录下的文件名。海象运算符“:=”可以先计算表达式再赋值
+            try:
+                name_list = os.listdir(ret := name_dir.pop())
+            except PermissionError:
+                continue
+            for i in name_list:
+                j = f'{ret}/{i}'
+                if os.path.isfile(j):
+                    try:
+                        size += os.path.getsize(j)
+                    except PermissionError:
+                        pass
+                else:
+                    name_dir.append(j)  # 如果是目录，压入栈中
+        return size
+
+    @staticmethod
+    def get_dir_size_os_walk(path):
+        """os.walk()获取文件夹大小，单位：Bytes
+        os.walk()返回一个三元组(root, dirs, files)，root是当前目录路径，dirs是当前目录下的子目录，files是当前目录下的文件。
+        有多少个文件夹（包括当前目录和所有子目录）就有多少个三元组。
+
+        经测试，os.walk()方法最快，其次是迭代方法，递归方法最慢
+        """
+        size = 0
+        for root, dirs, files in os.walk(path):
+            for name in files:
+                try:
+                    size += os.path.getsize(f'{root}/{name}')
+                except (OSError, PermissionError):
+                    # 捕获OSError和PermissionError异常，并跳过无法访问的文件
+                    continue
+        return size
+
+    @staticmethod
+    def get_size(path_):
+        """
+        获取文件或目录大小，如果是目录，返回目录下所有文件大小之和。注意，若目录包含子目录，子目录下文件大小不计算在内
+        :param path_: 文件或目录路径
+        :return: 文件或目录大小，单位：Bytes
+        :exception: 如果路径不存在，或者路径既不是文件也不是目录，抛出异常
+        """
+        if not os.path.exists(path_):
+            raise ValueError("The path does not exist: %s" % path_)
+        if FileUtil.is_file(path_):
+            return os.path.getsize(path_)
+        elif FileUtil.is_dir(path_):
+            return FileUtil.get_dir_size_os_walk(path_)
+        else:
+            raise ValueError("The path is not a file or directory: %s" % path_)
+
+    @staticmethod
+    def get_one_level_sub_dir_info(directory_path_: str) -> list[{}]:
+        """
+        获取一级子文件夹信息，包括文件夹路径、名称、大小、创建时间、修改时间、访问时间
+        os.scandir()方法返回一个迭代器，迭代器的每个元素是一个DirEntry对象，包含文件或目录的路径、体积、时间等元信息
+        :param directory_path_: 目标文件夹路径"""
+        # 判断directory_path是否为目录
+        if not FileUtil.is_dir(directory_path_):
+            raise ValueError("The path is not a directory: %s" % directory_path_)
+        iterator = os.scandir(directory_path_)
+        dir_info_list = []
+        for dirEntity in iterator:
+            if dirEntity.is_dir():
+                path_ = dirEntity.path
+                stat_ = dirEntity.stat()
+                dir_info_list.append(
+                    {
+                        "path": path_,
+                        "name": dirEntity.name,
+                        "size": FileUtil.get_dir_size_iterative(path_),
+                        "create_time": stat_.st_ctime,
+                        "update_time": stat_.st_mtime,
+                    }
+                )
+        return dir_info_list
